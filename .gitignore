@@ -1,6 +1,8 @@
 .ipynb_checkpoints
 *.pdf
-*.mp4
+/*.mp4
 1_PzSEqByMOkM_XfwYPGwrDg.gif
 .vscode
 /*.jpg
+*.gif
+OpenCV Course - Full Tutorial with Python.mp4

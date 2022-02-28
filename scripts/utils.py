@@ -132,6 +132,7 @@ def findContours(img, lt=128, ut=255, inv=True):
 def drawContours(img, cntrs, idx=-1, thickness=2, color=(0, 255, 0)):
     if idx != -1:
         cntrs = [cntrs[idx]]
+        idx = 0
     return cv2.drawContours(img.copy(), cntrs, idx, color, thickness)
 
 

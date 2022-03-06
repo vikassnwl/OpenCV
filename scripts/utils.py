@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from more_itertools import sort_together
 
 
 def num_channels(img):
@@ -125,8 +126,22 @@ def thresh(img, lt=128, ut=255, inv=True):
     return cv2.threshold(gray(img), lt, ut, cv2.THRESH_BINARY_INV if inv else cv2.THRESH_BINARY)[1]
 
 
-def findContours(img, lt=128, ut=255, inv=True):
-    return cv2.findContours(thresh(img, lt, ut, inv), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+def findContours(img, lt=128, ut=255, inv=True, retr='external', chain_approx='simple'):
+    if retr == 'external':
+        retr_ = cv2.RETR_EXTERNAL
+    elif retr == 'tree':
+        retr_ = cv2.RETR_TREE
+    elif retr == 'list':
+        retr_ = cv2.RETR_LIST
+    else:
+        print('invalid value for argument "retr"')
+    if chain_approx == 'simple':
+        chain_approx_ = cv2.CHAIN_APPROX_SIMPLE
+    elif chain_approx == 'none':
+        chain_approx_ = cv2.CHAIN_APPROX_NONE
+    else:
+        print('invalid value for argument "chain_approx"')
+    return cv2.findContours(thresh(img, lt, ut, inv), retr_, chain_approx_)
 
 
 def drawContours(img, cntrs, idx=-1, thickness=2, color=(0, 255, 0)):
@@ -149,3 +164,39 @@ def erode(img, ksize=3, iters=1):
 def morphologyEx(img, morph=0, ksize=3):
     kernel = np.ones((ksize, ksize), np.uint8)
     return cv2.morphologyEx(img, cv2.MORPH_OPEN if morph==1 else cv2.MORPH_CLOSE, kernel)
+
+
+def sort_cntrs(cntrs, hierarchy=None, key='left_to_right'):
+    if key == 'left_to_right':
+        reverse = False
+        key = lambda x: cv2.boundingRect(x)[0]
+    elif key == 'right_to_left':
+        reverse = True
+        key = lambda x: cv2.boundingRect(x)[0]
+    elif key == 'top_to_bottom':
+        reverse = False
+        key = lambda x: cv2.boundingRect(x)[1]
+    elif key == 'bottom_to_top':
+        reverse = True
+        key = lambda x: cv2.boundingRect(x)[1]
+    elif key == 'area_asc':
+        reverse = False
+        key = cv2.contourArea
+    elif key == 'area_desc':
+        reverse = True
+        key = cv2.contourArea
+    else:
+        raise Exception('Invald option for key')
+
+    if hierarchy is not None:
+        cntrs, hierarchy, nums = sort_together([cntrs, hierarchy.reshape(-1, 4), range(len(cntrs))], key=key, reverse=reverse)
+        d = {}
+        for i, num in enumerate(nums):
+            d[num] = i
+        for i in range(len(hierarchy)):
+            for j in range(4):
+                if hierarchy[i][j] != -1:
+                    hierarchy[i][j] = d[hierarchy[i][j]]
+        hierarchy = np.array(hierarchy).reshape(1, -1, 4)
+        return cntrs, hierarchy
+    else: return sorted(cntrs, key=key)
